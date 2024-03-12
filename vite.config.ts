@@ -9,7 +9,11 @@ import { libInjectCss } from "vite-plugin-lib-inject-css";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), libInjectCss(), dts({ include: ["lib"] })],
+  plugins: [
+    react(),
+    libInjectCss(),
+    dts({ include: ["lib"], exclude: ["**/*.test.tsx", "**/*.test.ts"] }),
+  ],
   build: {
     copyPublicDir: false,
     lib: {
@@ -17,16 +21,22 @@ export default defineConfig({
       formats: ["es"],
     },
     rollupOptions: {
+      // files to ignore
       external: ["react", "react/jsx-runtime"],
       input: Object.fromEntries(
-        glob.sync("lib/**/*.{ts,tsx}").map((file) => [
-          // The name of the entry point
-          // lib/nested/foo.ts becomes nested/foo
-          relative("lib", file.slice(0, file.length - extname(file).length)),
-          // The absolute path to the entry file
-          // lib/nested/foo.ts becomes /project/lib/nested/foo.ts
-          fileURLToPath(new URL(file, import.meta.url)),
-        ]),
+        glob
+          .sync("lib/**/*.{ts,tsx}")
+          .filter((file) => {
+            return !/\.test\.ts/.test(file) && file !== "lib/vite-env.d.ts";
+          })
+          .map((file) => [
+            // The name of the entry point
+            // lib/nested/foo.ts becomes nested/foo
+            relative("lib", file.slice(0, file.length - extname(file).length)),
+            // The absolute path to the entry file
+            // lib/nested/foo.ts becomes /project/lib/nested/foo.ts
+            fileURLToPath(new URL(file, import.meta.url)),
+          ]),
       ),
       output: {
         assetFileNames: "assets/[name][extname]",
